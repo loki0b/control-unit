@@ -6,6 +6,7 @@ module arithmetic_logic_unit (
     output reg signed [15:0]    out
 );
 
+    // FIX: Memory still not decode the opcode from control unit
     localparam [1:0]
         ADD = 2'b00,
         SUB = 2'b01,
