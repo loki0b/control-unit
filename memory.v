@@ -23,7 +23,7 @@ module memory (
             for (i = 0; i < NUM_REG; i++) begin
                 ram[i] <= 16'h0000;
             end
-        end else if (we) begin
+        end else if (write_enable) begin
             ram[write_addr] <= write_data;
         end
     end
