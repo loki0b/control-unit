@@ -14,7 +14,7 @@ module control_unit (
 
     function [15:0] signal_extension;
         input signal;
-        input [`IMM] imm;
+        input [5:0] imm;
         begin
             if (signal) // Negative number
                 signal_extension = {10'b1111111111, imm};
