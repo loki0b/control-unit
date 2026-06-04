@@ -6,9 +6,10 @@ module arithmetic_logic_unit (
     output reg signed [15:0]    out
 );
 
-    localparam ADD = 3'b000;
-    localparam SUB = 3'b001;
-    localparam MUL = 3'b010;
+    localparam [1:0]
+        ADD = 2'b00,
+        SUB = 2'b01,
+        MUL = 2'b10;
 
     always @(*) begin
         case (opcode)
