@@ -1,14 +1,15 @@
 module memory (
-    input  wire                clk,
-    input  wire                rst,
-    input  wire       write_enable,
-    input  wire [3:0]   write_addr,
-    input  wire [15:0]  write_data,
-    input  wire [3:0]   read_addr0,
-    input  wire [3:0]   read_addr1,
+    input wire                clk,
+    input wire                rst, // clear
+    input wire       write_enable,
+    input wire        read_enable,
+    input wire [3:0]   write_addr,
+    input wire [15:0]  write_data,
+    input wire [3:0]   read_addr0,
+    input wire [3:0]   read_addr1,
     
-    output wire [15:0]  read_data0,
-    output wire [15:0]  read_data1
+    output reg [15:0]  read_data0,
+    output reg [15:0]  read_data1
 );
     localparam 
         NUM_REG  = 16,
@@ -17,18 +18,22 @@ module memory (
     reg [REG_SIZE-1:0] ram [0:NUM_REG-1];
     integer i;
 
-    // Sync write
+    // Sync read and write
     always @(posedge clk) begin
         if (rst && write_enable) begin
-            for (i = 0; i < NUM_REG; i++) begin
+            for (i = 0; i < NUM_REG; i + 1) begin
                 ram[i] <= 16'h0000;
             end
+
+            read_data0 <= 0;
+            read_data1 <= 0;
         end else if (write_enable) begin
             ram[write_addr] <= write_data;
         end
-    end
 
-    // Async read
-    assign read_data0 = ram[read_addr0];
-    assign read_data1 = ram[read_addr1];
+        if (read_enable) begin
+            read_data0 <= ram[read_addr0];
+            read_data1 <= ram[read_addr1];
+        end
+    end
 endmodule
