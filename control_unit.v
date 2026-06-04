@@ -7,9 +7,13 @@ module control_unit (
     input wire [17:0]    switch_bus,
 
     // Control outputs
-    output reg                clear,
+    output reg                clear, // rst memory
     output reg         write_enable,
     output reg          read_enable,
+    output reg           alu_enable,
+    output reg           lcd_enable,
+    output reg              alu_imm, // ALU operation with imm
+    output reg              mem_imm, // Mem operation with imm
 
     // Outputs
     output reg [2:0]         opcode,
@@ -56,25 +60,33 @@ module control_unit (
     
     // Combinational
     always @(*) begin
-        write_enable = 0;
-        read_enable  = 0;
-        clear        = 0;
+        write_enable    = 0;
+        read_enable     = 0;
+        alu_enable      = 0;
+        lcd_enable      = 0;
+        clear           = 0;
+        alu_imm         = 0;
+        mem_imm         = 0;
 
         case (state)
             OFF: begin
                 write_enable = 0;
                 read_enable  = 0;
+                alu_enable   = 0;
+                lcd_enable   = 0;
             end
             
             INIT: begin
                 write_enable = 1;
                 clear        = 1;
+                lcd_enable   = 1;
             end
 
             IDLE: begin
                 write_enable = 0;
                 read_enable  = 0;
                 clear        = 0;
+                alu_enable   = 0;
             end
 
             FETCH: begin
@@ -91,11 +103,27 @@ module control_unit (
 
             // Execution depends on the instruction
             EXECUTE: begin
-                ;
+                if (opcode == CLEAR) clear = 1;
+                //else if (opcode == DISPLAY) 
+                else if (opcode != LOAD) begin 
+                    if (opcode == ADDI ||
+                        opcode == SUBI ||
+                        opcode == MUL)
+                    begin
+                        alu_imm = 1;    
+                    end
+
+                    alu_enable = 1;
+                end
+
+                read_enable = 0;
             end
 
             STORE: begin
-                ;
+                if (opcode != CLEAR && opcode != DISPLAY) write_enable = 1;
+                
+                if (opcode == LOAD) mem_imm = 1;
+                else mem_imm = 0;
             end
         endcase
     end
@@ -103,6 +131,7 @@ module control_unit (
 
     // Sequential
     always @(posedge clk) begin
+        // rst logic to on/off
         if (rst) begin
             if (state == OFF) state <= INIT;
             else state <= OFF;
