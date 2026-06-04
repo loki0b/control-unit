@@ -11,6 +11,7 @@ module memory (
     output reg [15:0]  read_data0,
     output reg [15:0]  read_data1
 );
+
     localparam 
         NUM_REG  = 16,
         REG_SIZE = 16;
