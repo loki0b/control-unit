@@ -132,7 +132,6 @@ module control_unit (
                 lcd_enable   = 1;
 
                 if (opcode == CLEAR) clear_mem = 1;
-                //else if (opcode == DISPLAY) read_enable = 1;
                 else if (opcode != LOAD) begin 
                     if (opcode == ADDI ||
                         opcode == SUBI ||
