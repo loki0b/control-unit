@@ -7,11 +7,11 @@ module control_unit (
     input wire [17:0]    switch_bus,
 
     // Control outputs
-    output reg                clear, // rst memory
+    output reg            clear_mem, // rst memory
     output reg         write_enable,
     output reg          read_enable,
     output reg           alu_enable,
-    output reg           lcd_enable,
+    output reg           lcd_enable, // Tells the lcd when it can operate or not
     output reg              alu_imm, // ALU operation with imm
     output reg              mem_imm, // Mem operation with imm
 
@@ -60,51 +60,79 @@ module control_unit (
     
     // Combinational
     always @(*) begin
-        write_enable    = 0;
-        read_enable     = 0;
-        alu_enable      = 0;
-        lcd_enable      = 0;
-        clear           = 0;
-        alu_imm         = 0;
-        mem_imm         = 0;
-
         case (state)
             OFF: begin
                 write_enable = 0;
                 read_enable  = 0;
                 alu_enable   = 0;
+                clear_mem    = 0;
+                alu_imm      = 0;
+                mem_imm      = 0;
                 lcd_enable   = 0;
             end
             
             INIT: begin
                 write_enable = 1;
-                clear        = 1;
+                read_enable  = 0;
+                alu_enable   = 0;
+                clear_mem    = 1;
+                alu_imm      = 0;
+                mem_imm      = 0;
                 lcd_enable   = 1;
             end
 
             IDLE: begin
                 write_enable = 0;
                 read_enable  = 0;
-                clear        = 0;
                 alu_enable   = 0;
+                clear_mem    = 0;
+                alu_imm      = 0;
+                mem_imm      = 0;
+                lcd_enable   = 1;
             end
 
             FETCH: begin
-                ;
+                write_enable = 0;
+                read_enable  = 0;
+                alu_enable   = 0;
+                clear_mem    = 0;
+                alu_imm      = 0;
+                mem_imm      = 0;
+                lcd_enable   = 1;
             end
 
             DECODE: begin
-                ;
+                write_enable = 0;
+                read_enable  = 0;
+                alu_enable   = 0;
+                clear_mem    = 0;
+                alu_imm      = 0;
+                mem_imm      = 0;
+                lcd_enable   = 1;
             end
 
             READ: begin
-                read_enable = 1;
+                write_enable = 0;
+                read_enable  = 1;
+                alu_enable   = 0;
+                clear_mem    = 0;
+                alu_imm      = 0;
+                mem_imm      = 0;
+                lcd_enable   = 1;
             end
 
             // Execution depends on the instruction
             EXECUTE: begin
-                if (opcode == CLEAR) clear = 1;
-                //else if (opcode == DISPLAY) 
+                write_enable = 0;
+                read_enable  = 0;
+                alu_enable   = 0;
+                clear_mem    = 0;
+                alu_imm      = 0;
+                mem_imm      = 0;
+                lcd_enable   = 1;
+
+                if (opcode == CLEAR) clear_mem = 1;
+                //else if (opcode == DISPLAY) read_enable = 1;
                 else if (opcode != LOAD) begin 
                     if (opcode == ADDI ||
                         opcode == SUBI ||
@@ -120,6 +148,14 @@ module control_unit (
             end
 
             STORE: begin
+                write_enable = 0;
+                read_enable  = 0;
+                alu_enable   = 0;
+                clear_mem    = 0;
+                alu_imm      = 0;
+                mem_imm      = 0;
+                lcd_enable   = 1;
+
                 if (opcode != CLEAR && opcode != DISPLAY) write_enable = 1;
                 
                 if (opcode == LOAD) mem_imm = 1;
