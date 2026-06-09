@@ -4,8 +4,6 @@ module cpu (
     input wire                 send,
     input wire [17:0]    switch_bus,
 
-    output wire          lcd_enable,
-
     output wire  [2:0]       opcode,
     output wire  [3:0]          dst,
     output reg [15:0]           out
@@ -95,7 +93,6 @@ module cpu (
         .write_enable(write_enable),
         .read_enable(read_enable),
         .alu_enable(alu_enable),
-        .lcd_enable(lcd_enable),
         .alu_imm(alu_imm),
         .mem_imm(mem_imm),
         .opcode(opcode),

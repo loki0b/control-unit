@@ -37,7 +37,6 @@ module mini_cpu_fpga (
         .send(send),
         .switch_bus(switch_bus),
 
-        .lcd_enable(lcd_enable),
         .opcode(opcode),
         .dst(dst),
         .out(out)
