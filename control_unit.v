@@ -220,6 +220,7 @@ module control_unit (
                     begin
                         opcode <= instruction[`OUT_OPCODE];
                         src0   <= instruction[`OUT_SRC0];
+                        dst    <= instruction[`OUT_SRC0];
                     end
 
                     state <= READ;
