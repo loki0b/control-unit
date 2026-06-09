@@ -7,7 +7,9 @@ module mini_cpu_fpga (
     output wire [7:0]    lcd_data,
     output wire            lcd_rs,
     output wire            lcd_rw,
-    output wire            lcd_en
+    output wire            lcd_en,
+    output wire            lcd_on,
+    output wire          lcd_blon
 );
 
     wire [2:0]  opcode;
@@ -43,8 +45,8 @@ module mini_cpu_fpga (
 
     lcd_controller lcd_ctl0(
         .clk(clk),
-        .rst(~lcd_enable),
-        .init(send),
+        .rst(rst), 
+        .update_trigger(send), 
         .opcode(opcode),
         .dst(dst),
         .data(out),
@@ -52,6 +54,8 @@ module mini_cpu_fpga (
         .lcd_data(lcd_data),
         .lcd_rs(lcd_rs),
         .lcd_rw(lcd_rw),
-        .lcd_en(lcd_en)
+        .lcd_en(lcd_en),
+        .lcd_on(lcd_on),
+        .lcd_blon(lcd_blon)
     );
 endmodule
