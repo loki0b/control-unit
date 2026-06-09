@@ -1,4 +1,12 @@
-`include "def.vh"
+`define IMM 5:0
+`define SGN 6
+`define OPCODE 17:15
+`define DST 14:11
+
+`define IMM_SRC0 10:7
+
+`define REG_SRC0 10:7
+`define REG_SRC1 6:3
 
 module control_unit (
     input wire                  clk,
@@ -198,38 +206,38 @@ module control_unit (
                 end
 
                 DECODE: begin
-                    if (instruction[`IMM_OPCODE] == ADDI ||
-                        instruction[`IMM_OPCODE] == SUBI ||
-                        instruction[`IMM_OPCODE] == MUL)
+                    if (instruction[`OPCODE] == ADDI ||
+                        instruction[`OPCODE] == SUBI ||
+                        instruction[`OPCODE] == MUL)
                     begin                    
-                        opcode <= instruction[`IMM_OPCODE];
-                        dst    <= instruction[`IMM_DST];
+                        opcode <= instruction[`OPCODE];
+                        dst    <= instruction[`DST];
                         src0   <= instruction[`IMM_SRC0];
                         imm    <= signal_extension(instruction[`SGN], instruction[`IMM]);
                     end 
 
-                    else if (instruction[`REG_OPCODE] == ADD ||
-                            instruction[`REG_OPCODE] == SUB)
+                    else if (instruction[`OPCODE] == ADD ||
+                            instruction[`OPCODE] == SUB)
                     begin
-                        opcode <= instruction[`REG_OPCODE];
-                        dst    <= instruction[`REG_DST];
+                        opcode <= instruction[`OPCODE];
+                        dst    <= instruction[`DST];
                         src0   <= instruction[`REG_SRC0];
                         src1   <= instruction[`REG_SRC1];
                     end
 
-                    else if (instruction[`LOAD_OPCODE] == LOAD)
+                    else if (instruction[`OPCODE] == LOAD)
                     begin
-                        opcode <= instruction[`LOAD_OPCODE];
-                        dst    <= instruction[`LOAD_DST];
+                        opcode <= instruction[`OPCODE];
+                        dst    <= instruction[`DST];
                         imm    <= signal_extension(instruction[`SGN], instruction[`IMM]);
                     end
 
-                    else if (instruction[`OUT_OPCODE] == CLEAR ||
-                            instruction[`OUT_OPCODE] == DISPLAY)
+                    else if (instruction[`OPCODE] == CLEAR ||
+                            instruction[`OPCODE] == DISPLAY)
                     begin
-                        opcode <= instruction[`OUT_OPCODE];
-                        src0   <= instruction[`OUT_SRC0];
-                        dst    <= instruction[`OUT_SRC0];
+                        opcode <= instruction[`OPCODE];
+                        src0   <= instruction[`DST];
+                        dst    <= instruction[`DST];
                     end
 
                     state <= READ;
