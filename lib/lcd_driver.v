@@ -45,7 +45,7 @@ module lcd_driver (
         init_cmds[3] = 8'h06;
     end
 
-    always @(posedge clk or posedge rst) begin
+    always @(posedge clk) begin
         if (rst) begin
             state <= S_INIT_WAIT;
             cnt <= 0;
