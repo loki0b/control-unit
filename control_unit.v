@@ -11,6 +11,7 @@ module control_unit (
     output reg         write_enable,
     output reg          read_enable,
     output reg           alu_enable,
+    output reg           lcd_enable, // lcd update signal
     output reg              alu_imm, // ALU operation with imm
     output reg              mem_imm, // Mem operation with imm
 
@@ -64,6 +65,7 @@ module control_unit (
                 write_enable = 0;
                 read_enable  = 0;
                 alu_enable   = 0;
+                lcd_enable   = 0;
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
@@ -73,6 +75,7 @@ module control_unit (
                 write_enable = 1;
                 read_enable  = 0;
                 alu_enable   = 0;
+                lcd_enable   = 0;
                 clear_mem    = 1;
                 alu_imm      = 0;
                 mem_imm      = 0;
@@ -82,6 +85,7 @@ module control_unit (
                 write_enable = 0;
                 read_enable  = 0;
                 alu_enable   = 0;
+                lcd_enable   = 0;
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
@@ -91,6 +95,7 @@ module control_unit (
                 write_enable = 0;
                 read_enable  = 0;
                 alu_enable   = 0;
+                lcd_enable   = 0;
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
@@ -100,6 +105,7 @@ module control_unit (
                 write_enable = 0;
                 read_enable  = 0;
                 alu_enable   = 0;
+                lcd_enable   = 0;
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
@@ -109,6 +115,7 @@ module control_unit (
                 write_enable = 0;
                 read_enable  = 1;
                 alu_enable   = 0;
+                lcd_enable   = 0;
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
@@ -119,6 +126,7 @@ module control_unit (
                 write_enable = 0;
                 read_enable  = 0;
                 alu_enable   = 0;
+                lcd_enable   = 0;
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
@@ -142,6 +150,7 @@ module control_unit (
                 write_enable = 0;
                 read_enable  = 0;
                 alu_enable   = 0;
+                lcd_enable   = 1;
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;

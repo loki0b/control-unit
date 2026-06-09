@@ -37,6 +37,8 @@ module mini_cpu_fpga (
         .send(send),
         .switch_bus(switch_bus),
 
+        .lcd_enable(lcd_enable),
+
         .opcode(opcode),
         .dst(dst),
         .out(out)
@@ -45,7 +47,7 @@ module mini_cpu_fpga (
     lcd_controller lcd_ctl0(
         .clk(clk),
         .rst(rst), 
-        .update_trigger(send), 
+        .update_trigger(lcd_enable), 
         .opcode(opcode),
         .dst(dst),
         .data(out),
