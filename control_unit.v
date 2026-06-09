@@ -27,7 +27,7 @@ module control_unit (
         input [5:0] imm;
         begin
             if (signal) // Negative number
-                signal_extension = {10'b1111111111, imm};
+                signal_extension = ~{10'b0000000000, imm} + 16'd1;
             else // Positive number
                 signal_extension = {10'b0000000000, imm};
         end
