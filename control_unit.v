@@ -11,7 +11,6 @@ module control_unit (
     output reg         write_enable,
     output reg          read_enable,
     output reg           alu_enable,
-    output reg           lcd_enable, // Tells the lcd when it can operate or not
     output reg              alu_imm, // ALU operation with imm
     output reg              mem_imm, // Mem operation with imm
 
@@ -68,7 +67,6 @@ module control_unit (
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
-                lcd_enable   = 0;
             end
             
             INIT: begin
@@ -78,7 +76,6 @@ module control_unit (
                 clear_mem    = 1;
                 alu_imm      = 0;
                 mem_imm      = 0;
-                lcd_enable   = 1;
             end
 
             IDLE: begin
@@ -88,7 +85,6 @@ module control_unit (
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
-                lcd_enable   = 1;
             end
 
             FETCH: begin
@@ -98,7 +94,6 @@ module control_unit (
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
-                lcd_enable   = 1;
             end
 
             DECODE: begin
@@ -108,7 +103,6 @@ module control_unit (
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
-                lcd_enable   = 1;
             end
 
             READ: begin
@@ -118,7 +112,6 @@ module control_unit (
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
-                lcd_enable   = 1;
             end
 
             // Execution depends on the instruction
@@ -129,7 +122,6 @@ module control_unit (
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
-                lcd_enable   = 1;
 
                 if (opcode == CLEAR) clear_mem = 1;
                 else if (opcode != LOAD) begin 
@@ -153,7 +145,6 @@ module control_unit (
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
-                lcd_enable   = 1;
 
                 if (opcode != CLEAR && opcode != DISPLAY) write_enable = 1;
                 
