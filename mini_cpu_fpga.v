@@ -1,8 +1,8 @@
 module mini_cpu_fpga (
-    input wire                clk,
-    input wire            btn_rst,
-    input wire           btn_send,
-    input wire [17:0]  switch_bus,
+    input wire                    clk,
+    input wire                btn_rst,
+    input wire               btn_send,
+    input wire [17:0]      switch_bus,
 
     output wire [7:0]        lcd_data,
     output wire                lcd_rs,
