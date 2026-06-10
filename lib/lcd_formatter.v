@@ -6,10 +6,8 @@ module lcd_formatter (
     input  wire [3:0]  dst,
     input  wire [15:0] data, 
     input  wire        next_char_req,
-    // ====================================================
     // ADICIONADO: Entrada de status do sistema para On/Off
     input  wire [1:0]  sys_status,
-    // ====================================================
 
     output wire [7:0]  char_data,
     output reg         char_valid
@@ -20,14 +18,11 @@ module lcd_formatter (
         LATCH = 1, 
         SEND = 2;
     
-    // ====================================================
-    // ADICIONADO: Estados de atraso para as novas transições
     localparam
         DELAY_INIT  = 3,
         DELAY_OFF   = 4,
         DELAY_READY = 5,
         DELAY_CLEAR = 6;
-    // ====================================================
     
     localparam [2:0]
         LOAD    = 3'b000,
@@ -39,21 +34,15 @@ module lcd_formatter (
         CLEAR   = 3'b110,
         DISPLAY = 3'b111;
 
-    // ====================================================
-    // MODIFICADO: Largura de state alterada de 1:0 para 2:0
     reg [2:0] state;
-    // ====================================================
     reg [4:0] char_index;
 
     reg [2:0] latched_op;
     reg [3:0] latched_dst;
     reg [15:0] latched_res;
     
-    // ====================================================
-    // ADICIONADO: Registradores para controle de tempo e sys
     reg [1:0]  latched_sys;
     reg [25:0] delay_cnt;
-    // ====================================================
 
     reg [15:0] abs_val;
     reg [19:0] bcd;
@@ -94,28 +83,19 @@ module lcd_formatter (
             state <= IDLE;
             char_index <= 0;
             char_valid <= 0;
-            // ================================================
-            // ADICIONADO: Inicialização do contador de delay
             delay_cnt <= 0;
-            // ================================================
             for (k = 0; k < 32; k = k + 1) screen[k] <= 8'h20; 
         end else begin
             case (state)
                 IDLE: begin
                     char_valid <= 0;
                     char_index <= 0;
-                    // ================================================
-                    // ADICIONADO: Reset do contador ao entrar em IDLE
                     delay_cnt <= 0;
-                    // ================================================
                     if (update_trigger) begin
                         latched_op <= opcode;
                         latched_dst <= dst;
                         latched_res <= data;
-                        // ================================================
-                        // ADICIONADO: Amostragem do status do sistema
                         latched_sys <= sys_status;
-                        // ================================================
                         state <= LATCH;
                     end
                 end
@@ -171,7 +151,7 @@ module lcd_formatter (
                         screen[31] <= 8'h30 + bcd[3:0];
 
                         screen[4]  <= 8'h20; // Espaço
-								screen[5]  <= 8'h20; // Espaço
+                        screen[5]  <= 8'h20; // Espaço
                         screen[6]  <= 8'h5B; // [
                         screen[7]  <= 8'h30 + dst_tens;
                         screen[8]  <= 8'h30 + dst_ones;
@@ -211,11 +191,8 @@ module lcd_formatter (
                             char_valid <= 0; 
                             if (latched_sys == 2'b01) state <= DELAY_INIT;     
                             else if (latched_sys == 2'b10) state <= DELAY_OFF; 
-                            // ====================================================
-                            // ADICIONADO: Redirecionamentos para novos delays
                             else if (latched_sys == 2'b11) state <= DELAY_READY;
                             else if (latched_op == CLEAR) state <= DELAY_CLEAR;
-                            // ====================================================
                             else state <= IDLE;                                
                         end else begin
                             char_index <= char_index + 1;
@@ -235,10 +212,7 @@ module lcd_formatter (
                         screen[19] <= 8'h64; // d         
                         screen[20] <= 8'h79; // y         
                         screen[21] <= 8'h21; // !         
-                        // ====================================================
-                        // MODIFICADO: latched_sys vira 2'b11 para a próxima transição
                         latched_sys <= 2'b11;             
-                        // ====================================================
                         char_index <= 0;                  
                         char_valid <= 1;                  
                         state <= SEND;                    
@@ -255,12 +229,10 @@ module lcd_formatter (
                         latched_op  <= CLEAR;             
                         char_index <= 0;                  
                         char_valid <= 1;                  
-                        state <= SEND;                    
+                        state <= LOAD;                    
                     end                                   
                 end                                       
 
-                // ====================================================
-                // ADICIONADO: Rotina do Ready para transicionar à tela padrão
                 DELAY_READY: begin
                     if (delay_cnt < 26'd65_000_000) begin
                         delay_cnt <= delay_cnt + 1;
@@ -284,10 +256,7 @@ module lcd_formatter (
                         state <= SEND;
                     end
                 end
-                // ====================================================
 
-                // ====================================================
-                // ADICIONADO: Rotina do CLEAR para transicionar à tela padrão
                 DELAY_CLEAR: begin
                     if (delay_cnt < 26'd65_000_000) begin
                         delay_cnt <= delay_cnt + 1;
@@ -311,7 +280,6 @@ module lcd_formatter (
                         state <= SEND;
                     end
                 end
-                // ====================================================
             endcase
         end
     end

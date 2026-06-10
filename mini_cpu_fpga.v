@@ -11,8 +11,9 @@ module mini_cpu_fpga (
     output wire                lcd_on,
     output wire              lcd_blon,
 
-    output wire [17:0] switch_led_bus
-);
+    output wire [17:0] switch_led_bus,
+    output wire [7:0]  ledg_bus
+ );
 
     wire [2:0]  opcode;
     wire [3:0]  dst;
@@ -23,6 +24,8 @@ module mini_cpu_fpga (
     wire [1:0]  sys_status;
 
     assign switch_led_bus = switch_bus;
+	 assign ledg_bus[6] = ~btn_rst;
+	 assign ledg_bus[4] = ~btn_send;
 
     button_handler btn0 (
         .clk(clk),
