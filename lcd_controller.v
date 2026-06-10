@@ -5,6 +5,7 @@ module lcd_controller (
     input  wire [2:0]  opcode,         // Current instruction
     input  wire [3:0]  dst,            // Destination register
     input  wire [15:0] data,           // Data result from operations
+    input  wire [1:0]  sys_status,
 
     output wire [7:0]  lcd_data,       
     output wire        lcd_rs,        
@@ -18,7 +19,6 @@ module lcd_controller (
     wire       char_valid;
     wire       next_char_req;
 
-    // Converts binary/hex data into 32 formatted ASCII characters
     lcd_formatter formatter (
         .clk            (clk),
         .rst            (rst),
@@ -29,10 +29,10 @@ module lcd_controller (
         .next_char_req  (next_char_req),
         
         .char_data      (char_data),
-        .char_valid     (char_valid)
+        .char_valid     (char_valid),
+        .sys_status     (sys_status)
     );
 
-    // Handles initialization, timings, and pin toggling
     lcd_driver driver (
         .clk            (clk),
         .rst            (rst),

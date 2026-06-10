@@ -28,7 +28,8 @@ module control_unit (
     output reg [3:0]            dst,
     output reg [3:0]           src0, 
     output reg [3:0]           src1, 
-    output reg [15:0]           imm
+    output reg [15:0]           imm,
+    output reg [1:0]         sys_status
 );
 
     function [15:0] signal_extension;
@@ -65,28 +66,33 @@ module control_unit (
 
     reg [2:0]  state        = OFF;
     reg [17:0] instruction  = 18'd0;
+    reg        off_pulse    = 0;
     
     // Combinational
     always @(*) begin
+        sys_status = 0;
+
         case (state)
             OFF: begin
                 write_enable = 0;
                 read_enable  = 0;
                 alu_enable   = 0;
-                lcd_enable   = 0;
+                lcd_enable   = off_pulse;
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
+                sys_status   = 2;
             end
             
             INIT: begin
                 write_enable = 1;
                 read_enable  = 0;
                 alu_enable   = 0;
-                lcd_enable   = 0;
+                lcd_enable   = 1;
                 clear_mem    = 1;
                 alu_imm      = 0;
                 mem_imm      = 0;
+                sys_status   = 1;
             end
 
             IDLE: begin
@@ -129,7 +135,6 @@ module control_unit (
                 mem_imm      = 0;
             end
 
-            // Execution depends on the instruction
             EXECUTE: begin
                 write_enable = 0;
                 read_enable  = 0;
@@ -174,13 +179,19 @@ module control_unit (
 
     // Sequential
     always @(posedge clk) begin
-        // rst logic to on/off
         if (rst) begin
-            if (state == OFF) state <= INIT;
-            else state <= OFF;
+            if (state == OFF) begin
+                state <= INIT;
+                off_pulse <= 0;
+            end else begin
+                state <= OFF;
+                off_pulse <= 1;
+            end
         end
 
         else begin
+            if (off_pulse) off_pulse <= 0;
+
             case (state)
                 OFF: begin
                    ;
@@ -248,12 +259,10 @@ module control_unit (
                 end
 
                 EXECUTE: begin
-                    
                     state <= STORE;
                 end
 
                 STORE: begin
-                    
                     state <= IDLE;
                 end
             endcase

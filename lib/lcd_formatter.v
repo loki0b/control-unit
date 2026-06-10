@@ -6,6 +6,10 @@ module lcd_formatter (
     input  wire [3:0]  dst,
     input  wire [15:0] data, 
     input  wire        next_char_req,
+    // ====================================================
+    // ADICIONADO: Entrada de status do sistema para On/Off
+    input  wire [1:0]  sys_status,
+    // ====================================================
 
     output wire [7:0]  char_data,
     output reg         char_valid
@@ -15,6 +19,15 @@ module lcd_formatter (
         IDLE = 0, 
         LATCH = 1, 
         SEND = 2;
+    
+    // ====================================================
+    // ADICIONADO: Estados de atraso para as novas transições
+    localparam
+        DELAY_INIT  = 3,
+        DELAY_OFF   = 4,
+        DELAY_READY = 5,
+        DELAY_CLEAR = 6;
+    // ====================================================
     
     localparam [2:0]
         LOAD    = 3'b000,
@@ -26,12 +39,21 @@ module lcd_formatter (
         CLEAR   = 3'b110,
         DISPLAY = 3'b111;
 
-    reg [1:0] state;
+    // ====================================================
+    // MODIFICADO: Largura de state alterada de 1:0 para 2:0
+    reg [2:0] state;
+    // ====================================================
     reg [4:0] char_index;
 
     reg [2:0] latched_op;
     reg [3:0] latched_dst;
     reg [15:0] latched_res;
+    
+    // ====================================================
+    // ADICIONADO: Registradores para controle de tempo e sys
+    reg [1:0]  latched_sys;
+    reg [25:0] delay_cnt;
+    // ====================================================
 
     reg [15:0] abs_val;
     reg [19:0] bcd;
@@ -72,16 +94,28 @@ module lcd_formatter (
             state <= IDLE;
             char_index <= 0;
             char_valid <= 0;
+            // ================================================
+            // ADICIONADO: Inicialização do contador de delay
+            delay_cnt <= 0;
+            // ================================================
             for (k = 0; k < 32; k = k + 1) screen[k] <= 8'h20; 
         end else begin
             case (state)
                 IDLE: begin
                     char_valid <= 0;
                     char_index <= 0;
+                    // ================================================
+                    // ADICIONADO: Reset do contador ao entrar em IDLE
+                    delay_cnt <= 0;
+                    // ================================================
                     if (update_trigger) begin
                         latched_op <= opcode;
                         latched_dst <= dst;
                         latched_res <= data;
+                        // ================================================
+                        // ADICIONADO: Amostragem do status do sistema
+                        latched_sys <= sys_status;
+                        // ================================================
                         state <= LATCH;
                     end
                 end
@@ -89,12 +123,44 @@ module lcd_formatter (
                 LATCH: begin
                     for (k = 0; k < 32; k = k + 1) screen[k] <= 8'h20;
 
-                    if (latched_op == CLEAR) begin
+                    if (latched_sys == 2'b01) begin 
+                        screen[0] <= 8'h53; // S    
+                        screen[1] <= 8'h74; // t    
+                        screen[2] <= 8'h61; // a    
+                        screen[3] <= 8'h72; // r    
+                        screen[4] <= 8'h74; // t    
+                        screen[5] <= 8'h69; // i    
+                        screen[6] <= 8'h6E; // n    
+                        screen[7] <= 8'h67; // g    
+                        screen[8] <= 8'h2E; // .    
+                        screen[9] <= 8'h2E; // .    
+                        screen[10]<= 8'h2E; // .    
+                        state <= SEND;              
+                        char_valid <= 1;            
+                    end                             
+                    else if (latched_sys == 2'b10) begin 
+                        screen[0] <= 8'h53; // S    
+                        screen[1] <= 8'h68; // h    
+                        screen[2] <= 8'h75; // u    
+                        screen[3] <= 8'h74; // t    
+                        screen[4] <= 8'h64; // d    
+                        screen[5] <= 8'h6F; // o    
+                        screen[6] <= 8'h77; // w    
+                        screen[7] <= 8'h6E; // n    
+                        screen[8] <= 8'h2E; // .    
+                        screen[9] <= 8'h2E; // .    
+                        screen[10]<= 8'h2E; // .    
+                        state <= SEND;              
+                        char_valid <= 1;            
+                    end                             
+                    else if (latched_op == CLEAR) begin 
                         screen[0] <= 8'h43; // C
                         screen[1] <= 8'h4C; // L
                         screen[2] <= 8'h45; // E
                         screen[3] <= 8'h41; // A
                         screen[4] <= 8'h52; // R
+                        state <= SEND;              
+                        char_valid <= 1;            
                     end
                     else begin
                         screen[26] <= latched_res[15] ? 8'h2D : 8'h2B;
@@ -104,11 +170,13 @@ module lcd_formatter (
                         screen[30] <= 8'h30 + bcd[7:4];
                         screen[31] <= 8'h30 + bcd[3:0];
 
+                        screen[4]  <= 8'h20; // Espaço
+								screen[5]  <= 8'h20; // Espaço
                         screen[6]  <= 8'h5B; // [
                         screen[7]  <= 8'h30 + dst_tens;
                         screen[8]  <= 8'h30 + dst_ones;
                         screen[9]  <= 8'h5D; // ]
-                        screen[10] <= 8'h5B; // [
+                        screen[10]  <= 8'h5B; // [
                         screen[11] <= latched_dst[3] ? 8'h31 : 8'h30;
                         screen[12] <= latched_dst[2] ? 8'h31 : 8'h30;
                         screen[13] <= latched_dst[1] ? 8'h31 : 8'h30;
@@ -132,22 +200,118 @@ module lcd_formatter (
                                 default: begin screen[0]<=8'h3F; screen[1]<=8'h3F; screen[2]<=8'h3F; end
                             endcase
                         end
+                        state <= SEND;              
+                        char_valid <= 1;            
                     end
-                    
-                    state <= SEND;
-                    char_valid <= 1;
                 end
                 
                 SEND: begin
                     if (next_char_req) begin
                         if (char_index == 31) begin
-                            state <= IDLE;
-                            char_valid <= 0;
+                            char_valid <= 0; 
+                            if (latched_sys == 2'b01) state <= DELAY_INIT;     
+                            else if (latched_sys == 2'b10) state <= DELAY_OFF; 
+                            // ====================================================
+                            // ADICIONADO: Redirecionamentos para novos delays
+                            else if (latched_sys == 2'b11) state <= DELAY_READY;
+                            else if (latched_op == CLEAR) state <= DELAY_CLEAR;
+                            // ====================================================
+                            else state <= IDLE;                                
                         end else begin
                             char_index <= char_index + 1;
                         end
                     end
                 end
+
+                DELAY_INIT: begin 
+                    if (delay_cnt < 26'd65_000_000) begin 
+                        delay_cnt <= delay_cnt + 1;       
+                    end else begin                        
+                        delay_cnt <= 0;                   
+                        for (k = 0; k < 32; k = k + 1) screen[k] <= 8'h20; 
+                        screen[16] <= 8'h52; // R         
+                        screen[17] <= 8'h65; // e         
+                        screen[18] <= 8'h61; // a         
+                        screen[19] <= 8'h64; // d         
+                        screen[20] <= 8'h79; // y         
+                        screen[21] <= 8'h21; // !         
+                        // ====================================================
+                        // MODIFICADO: latched_sys vira 2'b11 para a próxima transição
+                        latched_sys <= 2'b11;             
+                        // ====================================================
+                        char_index <= 0;                  
+                        char_valid <= 1;                  
+                        state <= SEND;                    
+                    end                                   
+                end                                       
+
+                DELAY_OFF: begin 
+                    if (delay_cnt < 26'd65_000_000) begin 
+                        delay_cnt <= delay_cnt + 1;       
+                    end else begin                        
+                        delay_cnt <= 0;                   
+                        for (k = 0; k < 32; k = k + 1) screen[k] <= 8'h20; 
+                        latched_sys <= 2'b00;             
+                        latched_op  <= CLEAR;             
+                        char_index <= 0;                  
+                        char_valid <= 1;                  
+                        state <= SEND;                    
+                    end                                   
+                end                                       
+
+                // ====================================================
+                // ADICIONADO: Rotina do Ready para transicionar à tela padrão
+                DELAY_READY: begin
+                    if (delay_cnt < 26'd65_000_000) begin
+                        delay_cnt <= delay_cnt + 1;
+                    end else begin
+                        delay_cnt <= 0;
+                        for (k = 0; k < 32; k = k + 1) screen[k] <= 8'h20;
+                        
+                        // Linha 1: ----  [--][----]
+                        screen[0]  <= 8'h2D; screen[1]  <= 8'h2D; screen[2]  <= 8'h2D; screen[3]  <= 8'h2D;
+                        screen[4]  <= 8'h20; screen[5]  <= 8'h20; 
+                        screen[6]  <= 8'h5B; screen[7]  <= 8'h2D; screen[8]  <= 8'h2D; screen[9]  <= 8'h5D;
+                        screen[10] <= 8'h5B; screen[11] <= 8'h2D; screen[12] <= 8'h2D; screen[13] <= 8'h2D; screen[14] <= 8'h2D; screen[15] <= 8'h5D;
+                        
+                        // Linha 2: +00000
+                        screen[26] <= 8'h2B;
+                        screen[27] <= 8'h30; screen[28] <= 8'h30; screen[29] <= 8'h30; screen[30] <= 8'h30; screen[31] <= 8'h30;
+                        
+                        latched_sys <= 2'b00;
+                        char_index <= 0;
+                        char_valid <= 1;
+                        state <= SEND;
+                    end
+                end
+                // ====================================================
+
+                // ====================================================
+                // ADICIONADO: Rotina do CLEAR para transicionar à tela padrão
+                DELAY_CLEAR: begin
+                    if (delay_cnt < 26'd65_000_000) begin
+                        delay_cnt <= delay_cnt + 1;
+                    end else begin
+                        delay_cnt <= 0;
+                        for (k = 0; k < 32; k = k + 1) screen[k] <= 8'h20;
+                        
+                        // Linha 1: ----  [--][----]
+                        screen[0]  <= 8'h2D; screen[1]  <= 8'h2D; screen[2]  <= 8'h2D; screen[3]  <= 8'h2D;
+                        screen[4]  <= 8'h20; screen[5]  <= 8'h20; 
+                        screen[6]  <= 8'h5B; screen[7]  <= 8'h2D; screen[8]  <= 8'h2D; screen[9]  <= 8'h5D;
+                        screen[10] <= 8'h5B; screen[11] <= 8'h2D; screen[12] <= 8'h2D; screen[13] <= 8'h2D; screen[14] <= 8'h2D; screen[15] <= 8'h5D;
+                        
+                        // Linha 2: +00000
+                        screen[26] <= 8'h2B;
+                        screen[27] <= 8'h30; screen[28] <= 8'h30; screen[29] <= 8'h30; screen[30] <= 8'h30; screen[31] <= 8'h30;
+                        
+                        latched_op <= 3'b000; 
+                        char_index <= 0;
+                        char_valid <= 1;
+                        state <= SEND;
+                    end
+                end
+                // ====================================================
             endcase
         end
     end

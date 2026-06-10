@@ -8,11 +8,11 @@ module cpu (
 
     output wire  [2:0]       opcode,
     output wire  [3:0]          dst,
-    output reg [15:0]           out
+    output reg [15:0]           out,
+    output wire [1:0]    sys_status
 );
 
-    // Maybe we should use it in header
-    // opcodes
+    // General opcodes
     localparam [2:0]
         LOAD    = 3'b000,
         ADD     = 3'b001,
@@ -23,9 +23,11 @@ module cpu (
         CLEAR   = 3'b110,
         DISPLAY = 3'b111;
     
-    // ------ Control Unit --------
+    localparam [1:0]
+        ALU_ADD = 2'b00,
+        ALU_SUB = 2'b01,
+        ALU_MUL = 2'b10;
 
-    // Control signals
     wire clear;
     wire write_enable;
     wire read_enable;
@@ -33,9 +35,6 @@ module cpu (
     wire alu_imm;
     wire mem_imm;
     
-    // Data signals
-    //reg [2:0]  opcode;
-    //reg [3:0]  dst;
     wire [3:0]  src0; 
     wire [3:0]  src1;
     wire [15:0] imm;
@@ -43,11 +42,8 @@ module cpu (
     // ----------- Memory --------------
     
     wire [15:0] mem_data_in;
-    wire [15:0] mem_data_out;
     wire [15:0] read_data0;
     wire [15:0] read_data1;
-
-    // --- Arithmetic and Logic Unit ---
 
     wire [15:0] alu_data_in;
     wire [15:0] alu_data_out;
@@ -59,27 +55,13 @@ module cpu (
     always @(*) begin
         alu_opcode = 0;
 
-        if (opcode == ADD ||
-            opcode == ADDI)
-        begin
-            alu_opcode = 2'b00;
-        end
-
-        else if (opcode == SUB ||
-                 opcode == SUBI)
-        begin
-            alu_opcode = 2'b01;
-        end
-
-        else if (opcode == MUL)
-        begin
-            alu_opcode = 2'b10;
-        end
+        if (opcode == ADD || opcode == ADDI) alu_opcode = ALU_ADD;
+        else if (opcode == SUB || opcode == SUBI) alu_opcode = ALU_SUB;
+        else if (opcode == MUL) alu_opcode = ALU_MUL;
     end
 
     always @(*) begin
         out = 0;
-
         if (opcode == LOAD) out = imm;
         else if (opcode == DISPLAY) out = read_data0;
         else if (opcode != CLEAR) out = alu_data_out;
@@ -102,7 +84,8 @@ module cpu (
         .dst(dst),
         .src0(src0),
         .src1(src1),
-        .imm(imm)
+        .imm(imm),
+        .sys_status(sys_status)
     );
 
     memory mem0 (
@@ -114,7 +97,6 @@ module cpu (
         .write_data(mem_data_in),
         .read_addr0(src0),
         .read_addr1(src1),
-
         .read_data0(read_data0),
         .read_data1(read_data1)
     );
@@ -123,7 +105,6 @@ module cpu (
         .opcode(alu_opcode),
         .a(read_data0),
         .b(alu_data_in),
-
         .out(alu_data_out)
     );
 

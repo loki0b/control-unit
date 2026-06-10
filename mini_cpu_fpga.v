@@ -20,6 +20,7 @@ module mini_cpu_fpga (
     wire        lcd_enable;
     wire        rst;
     wire        send;
+    wire [1:0]  sys_status;
 
     assign switch_led_bus = switch_bus;
 
@@ -42,10 +43,10 @@ module mini_cpu_fpga (
         .switch_bus(switch_bus),
 
         .lcd_enable(lcd_enable),
-
         .opcode(opcode),
         .dst(dst),
-        .out(out)
+        .out(out),
+        .sys_status(sys_status)
     );
 
     lcd_controller lcd_ctl0(
@@ -55,6 +56,7 @@ module mini_cpu_fpga (
         .opcode(opcode),
         .dst(dst),
         .data(out),
+        .sys_status(sys_status),
 
         .lcd_data(lcd_data),
         .lcd_rs(lcd_rs),
