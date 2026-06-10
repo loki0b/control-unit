@@ -1,5 +1,4 @@
 module lcd_controller (
-    // CPU Interface
     input  wire        clk,
     input  wire        rst,
     input  wire        update_trigger, // Pulse from CPU to start drawing
@@ -19,7 +18,6 @@ module lcd_controller (
     wire       char_valid;
     wire       next_char_req;
 
-    // Module 1: Formatter
     // Converts binary/hex data into 32 formatted ASCII characters
     lcd_formatter formatter (
         .clk            (clk),
@@ -34,7 +32,6 @@ module lcd_controller (
         .char_valid     (char_valid)
     );
 
-    // Physical Driver
     // Handles initialization, timings, and pin toggling
     lcd_driver driver (
         .clk            (clk),
