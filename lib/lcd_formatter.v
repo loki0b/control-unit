@@ -35,6 +35,10 @@ module lcd_formatter (
 
     reg [15:0] abs_val;
     reg [19:0] bcd;
+    
+    reg [3:0] dst_tens;
+    reg [3:0] dst_ones;
+    
     integer i;
 
     always @(*) begin
@@ -47,6 +51,14 @@ module lcd_formatter (
             if (bcd[15:12] >= 5) bcd[15:12] = bcd[15:12] + 3;
             if (bcd[19:16] >= 5) bcd[19:16] = bcd[19:16] + 3;
             bcd = {bcd[18:0], abs_val[i]};
+        end
+
+        if (latched_dst >= 10) begin
+            dst_tens = 1;
+            dst_ones = latched_dst - 10;
+        end else begin
+            dst_tens = 0;
+            dst_ones = latched_dst;
         end
     end
 
@@ -85,46 +97,40 @@ module lcd_formatter (
                         screen[4] <= 8'h52; // R
                     end
                     else begin
-                        screen[16] <= latched_res[15] ? 8'h2D : 8'h2B;
-                        screen[17] <= 8'h30 + bcd[19:16];
-                        screen[18] <= 8'h30 + bcd[15:12];
-                        screen[19] <= 8'h30 + bcd[11:8];
-                        screen[20] <= 8'h30 + bcd[7:4];
-                        screen[21] <= 8'h30 + bcd[3:0];
+                        screen[26] <= latched_res[15] ? 8'h2D : 8'h2B;
+                        screen[27] <= 8'h30 + bcd[19:16];
+                        screen[28] <= 8'h30 + bcd[15:12];
+                        screen[29] <= 8'h30 + bcd[11:8];
+                        screen[30] <= 8'h30 + bcd[7:4];
+                        screen[31] <= 8'h30 + bcd[3:0];
+
+                        screen[6]  <= 8'h5B; // [
+                        screen[7]  <= 8'h30 + dst_tens;
+                        screen[8]  <= 8'h30 + dst_ones;
+                        screen[9]  <= 8'h5D; // ]
+                        screen[10] <= 8'h5B; // [
+                        screen[11] <= latched_dst[3] ? 8'h31 : 8'h30;
+                        screen[12] <= latched_dst[2] ? 8'h31 : 8'h30;
+                        screen[13] <= latched_dst[1] ? 8'h31 : 8'h30;
+                        screen[14] <= latched_dst[0] ? 8'h31 : 8'h30;
+                        screen[15] <= 8'h5D; // ]
 
                         if (latched_op == DISPLAY) begin
                             screen[0] <= 8'h44; // D
                             screen[1] <= 8'h49; // I
                             screen[2] <= 8'h53; // S
                             screen[3] <= 8'h50; // P
-                            screen[4] <= 8'h4C; // L
-                            screen[5] <= 8'h41; // A
-                            screen[6] <= 8'h59; // Y
-                            
-                            screen[8]  <= 8'h5B; // [
-                            screen[9]  <= latched_dst[3] ? 8'h31 : 8'h30;
-                            screen[10] <= latched_dst[2] ? 8'h31 : 8'h30;
-                            screen[11] <= latched_dst[1] ? 8'h31 : 8'h30;
-                            screen[12] <= latched_dst[0] ? 8'h31 : 8'h30;
-                            screen[13] <= 8'h5D; // ]
                         end
                         else begin
                             case (latched_op)
                                 LOAD: begin screen[0]<=8'h4C; screen[1]<=8'h4F; screen[2]<=8'h41; screen[3]<=8'h44; end
-                                ADD:  begin screen[0]<=8'h41; screen[1]<=8'h44; screen[2]<=8'h44; screen[3]<=8'h20; end
+                                ADD:  begin screen[0]<=8'h41; screen[1]<=8'h44; screen[2]<=8'h44; end
                                 ADDI: begin screen[0]<=8'h41; screen[1]<=8'h44; screen[2]<=8'h44; screen[3]<=8'h49; end
-                                SUB:  begin screen[0]<=8'h53; screen[1]<=8'h55; screen[2]<=8'h42; screen[3]<=8'h20; end
+                                SUB:  begin screen[0]<=8'h53; screen[1]<=8'h55; screen[2]<=8'h42; end
                                 SUBI: begin screen[0]<=8'h53; screen[1]<=8'h55; screen[2]<=8'h42; screen[3]<=8'h49; end
-                                MUL:  begin screen[0]<=8'h4D; screen[1]<=8'h55; screen[2]<=8'h4C; screen[3]<=8'h20; end
-                                default: begin screen[0]<=8'h3F; screen[1]<=8'h3F; screen[2]<=8'h3F; screen[3]<=8'h20; end
+                                MUL:  begin screen[0]<=8'h4D; screen[1]<=8'h55; screen[2]<=8'h4C; end
+                                default: begin screen[0]<=8'h3F; screen[1]<=8'h3F; screen[2]<=8'h3F; end
                             endcase
-
-                            screen[6]  <= 8'h5B; // [
-                            screen[7]  <= latched_dst[3] ? 8'h31 : 8'h30;
-                            screen[8]  <= latched_dst[2] ? 8'h31 : 8'h30;
-                            screen[9]  <= latched_dst[1] ? 8'h31 : 8'h30;
-                            screen[10] <= latched_dst[0] ? 8'h31 : 8'h30;
-                            screen[11] <= 8'h5D; // ]
                         end
                     end
                     
