@@ -6,13 +6,20 @@ module lcd_formatter (
     input  wire [3:0]  dst,
     input  wire [15:0] data, 
     input  wire        next_char_req,
-    // ADICIONADO: Entrada de status do sistema para On/Off
     input  wire [1:0]  sys_status,
 
     output wire [7:0]  char_data,
     output reg         char_valid
 );
 
+    // Sys status
+    localparam [1:0]
+        SYS_OFF     = 2'b00,
+        SYS_INIT    = 2'b01,
+        SYS_RUNNING = 2'b10,
+        SYS_READY   = 2'b11;
+
+    // FSM States
     localparam 
         IDLE = 0, 
         LATCH = 1, 
@@ -24,15 +31,16 @@ module lcd_formatter (
         DELAY_READY = 5,
         DELAY_CLEAR = 6;
     
+    // Opcodes
     localparam [2:0]
-        LOAD    = 3'b000,
-        ADD     = 3'b001,
-        ADDI    = 3'b010,
-        SUB     = 3'b011,
-        SUBI    = 3'b100,
-        MUL     = 3'b101,
-        CLEAR   = 3'b110,
-        DISPLAY = 3'b111;
+        OP_LOAD    = 3'b000,
+        OP_ADD     = 3'b001,
+        OP_ADDI    = 3'b010,
+        OP_SUB     = 3'b011,
+        OP_SUBI    = 3'b100,
+        OP_MUL     = 3'b101,
+        OP_CLEAR   = 3'b110,
+        OP_DISPLAY = 3'b111;
 
     reg [2:0] state;
     reg [4:0] char_index;
@@ -103,7 +111,7 @@ module lcd_formatter (
                 LATCH: begin
                     for (k = 0; k < 32; k = k + 1) screen[k] <= 8'h20;
 
-                    if (latched_sys == 2'b01) begin 
+                    if (latched_sys == SYS_INIT) begin 
                         screen[0] <= 8'h53; // S    
                         screen[1] <= 8'h74; // t    
                         screen[2] <= 8'h61; // a    
@@ -118,7 +126,7 @@ module lcd_formatter (
                         state <= SEND;              
                         char_valid <= 1;            
                     end                             
-                    else if (latched_sys == 2'b10) begin 
+                    else if (latched_sys == SYS_OFF) begin 
                         screen[0] <= 8'h53; // S    
                         screen[1] <= 8'h68; // h    
                         screen[2] <= 8'h75; // u    
@@ -133,7 +141,7 @@ module lcd_formatter (
                         state <= SEND;              
                         char_valid <= 1;            
                     end                             
-                    else if (latched_op == CLEAR) begin 
+                    else if (latched_op == OP_CLEAR) begin 
                         screen[0] <= 8'h43; // C
                         screen[1] <= 8'h4C; // L
                         screen[2] <= 8'h45; // E
@@ -163,7 +171,7 @@ module lcd_formatter (
                         screen[14] <= latched_dst[0] ? 8'h31 : 8'h30;
                         screen[15] <= 8'h5D; // ]
 
-                        if (latched_op == DISPLAY) begin
+                        if (latched_op == OP_DISPLAY) begin
                             screen[0] <= 8'h44; // D
                             screen[1] <= 8'h49; // I
                             screen[2] <= 8'h53; // S
@@ -171,12 +179,12 @@ module lcd_formatter (
                         end
                         else begin
                             case (latched_op)
-                                LOAD: begin screen[0]<=8'h4C; screen[1]<=8'h4F; screen[2]<=8'h41; screen[3]<=8'h44; end
-                                ADD:  begin screen[0]<=8'h41; screen[1]<=8'h44; screen[2]<=8'h44; end
-                                ADDI: begin screen[0]<=8'h41; screen[1]<=8'h44; screen[2]<=8'h44; screen[3]<=8'h49; end
-                                SUB:  begin screen[0]<=8'h53; screen[1]<=8'h55; screen[2]<=8'h42; end
-                                SUBI: begin screen[0]<=8'h53; screen[1]<=8'h55; screen[2]<=8'h42; screen[3]<=8'h49; end
-                                MUL:  begin screen[0]<=8'h4D; screen[1]<=8'h55; screen[2]<=8'h4C; end
+                                OP_LOAD: begin screen[0]<=8'h4C; screen[1]<=8'h4F; screen[2]<=8'h41; screen[3]<=8'h44; end
+                                OP_ADD:  begin screen[0]<=8'h41; screen[1]<=8'h44; screen[2]<=8'h44; end
+                                OP_ADDI: begin screen[0]<=8'h41; screen[1]<=8'h44; screen[2]<=8'h44; screen[3]<=8'h49; end
+                                OP_SUB:  begin screen[0]<=8'h53; screen[1]<=8'h55; screen[2]<=8'h42; end
+                                OP_SUBI: begin screen[0]<=8'h53; screen[1]<=8'h55; screen[2]<=8'h42; screen[3]<=8'h49; end
+                                OP_MUL:  begin screen[0]<=8'h4D; screen[1]<=8'h55; screen[2]<=8'h4C; end
                                 default: begin screen[0]<=8'h3F; screen[1]<=8'h3F; screen[2]<=8'h3F; end
                             endcase
                         end
@@ -189,10 +197,10 @@ module lcd_formatter (
                     if (next_char_req) begin
                         if (char_index == 31) begin
                             char_valid <= 0; 
-                            if (latched_sys == 2'b01) state <= DELAY_INIT;     
-                            else if (latched_sys == 2'b10) state <= DELAY_OFF; 
-                            else if (latched_sys == 2'b11) state <= DELAY_READY;
-                            else if (latched_op == CLEAR) state <= DELAY_CLEAR;
+                            if (latched_sys == SYS_INIT) state <= DELAY_INIT;     
+                            else if (latched_sys == SYS_OFF) state <= DELAY_OFF; 
+                            else if (latched_sys == SYS_READY) state <= DELAY_READY;
+                            else if (latched_op == OP_CLEAR) state <= DELAY_CLEAR;
                             else state <= IDLE;                                
                         end else begin
                             char_index <= char_index + 1;
@@ -212,7 +220,7 @@ module lcd_formatter (
                         screen[19] <= 8'h64; // d         
                         screen[20] <= 8'h79; // y         
                         screen[21] <= 8'h21; // !         
-                        latched_sys <= 2'b11;             
+                        latched_sys <= SYS_READY;             
                         char_index <= 0;                  
                         char_valid <= 1;                  
                         state <= SEND;                    
@@ -225,11 +233,11 @@ module lcd_formatter (
                     end else begin                        
                         delay_cnt <= 0;                   
                         for (k = 0; k < 32; k = k + 1) screen[k] <= 8'h20; 
-                        latched_sys <= 2'b00;             
-                        latched_op  <= CLEAR;             
+                        latched_sys <= SYS_RUNNING;             
+                        latched_op  <= OP_LOAD;            
                         char_index <= 0;                  
                         char_valid <= 1;                  
-                        state <= LOAD;                    
+                        state <= SEND;                
                     end                                   
                 end                                       
 
@@ -250,7 +258,7 @@ module lcd_formatter (
                         screen[26] <= 8'h2B;
                         screen[27] <= 8'h30; screen[28] <= 8'h30; screen[29] <= 8'h30; screen[30] <= 8'h30; screen[31] <= 8'h30;
                         
-                        latched_sys <= 2'b00;
+                        latched_sys <= SYS_RUNNING;
                         char_index <= 0;
                         char_valid <= 1;
                         state <= SEND;
@@ -274,7 +282,7 @@ module lcd_formatter (
                         screen[26] <= 8'h2B;
                         screen[27] <= 8'h30; screen[28] <= 8'h30; screen[29] <= 8'h30; screen[30] <= 8'h30; screen[31] <= 8'h30;
                         
-                        latched_op <= 3'b000; 
+                        latched_op <= OP_LOAD; 
                         char_index <= 0;
                         char_valid <= 1;
                         state <= SEND;

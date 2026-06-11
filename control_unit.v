@@ -43,6 +43,14 @@ module control_unit (
         end
     endfunction
 
+    // Sys status
+    localparam [1:0]
+        SYS_OFF     = 2'b00,
+        SYS_INIT    = 2'b01,
+        SYS_RUNNING = 2'b10,
+        SYS_READY   = 2'b11;
+
+    // States
     localparam [2:0]
         OFF         = 3'b000,
         INIT        = 3'b001,
@@ -53,7 +61,7 @@ module control_unit (
         EXECUTE     = 3'b110,
         STORE       = 3'b111;
 
-    // opcodes
+    // Opcodes
     localparam [2:0]
         LOAD    = 3'b000,
         ADD     = 3'b001,
@@ -70,7 +78,7 @@ module control_unit (
     
     // Combinational
     always @(*) begin
-        sys_status = 0;
+        sys_status = SYS_RUNNING;
 
         case (state)
             OFF: begin
@@ -81,7 +89,7 @@ module control_unit (
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
-                sys_status   = 2;
+                sys_status   = SYS_OFF;
             end
             
             INIT: begin
@@ -92,7 +100,7 @@ module control_unit (
                 clear_mem    = 1;
                 alu_imm      = 0;
                 mem_imm      = 0;
-                sys_status   = 1;
+                sys_status   = SYS_INIT;
             end
 
             IDLE: begin
@@ -167,6 +175,8 @@ module control_unit (
                 clear_mem    = 0;
                 alu_imm      = 0;
                 mem_imm      = 0;
+					 
+					 if (opcode == ADDI || opcode == SUBI || opcode == MUL) alu_imm = 1;
 
                 if (opcode != CLEAR && opcode != DISPLAY) write_enable = 1;
                 

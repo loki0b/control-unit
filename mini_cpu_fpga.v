@@ -15,6 +15,13 @@ module mini_cpu_fpga (
     output wire [7:0]  ledg_bus
  );
 
+    // sys_status
+    localparam [1:0]
+        SYS_OFF     = 2'b00,
+        SYS_INIT    = 2'b01,
+        SYS_RUNNING = 2'b10,
+        SYS_READY   = 2'b11;
+
     wire [2:0]  opcode;
     wire [3:0]  dst;
     wire [15:0] out;
@@ -23,9 +30,11 @@ module mini_cpu_fpga (
     wire        send;
     wire [1:0]  sys_status;
 
-    assign switch_led_bus = switch_bus;
-	 assign ledg_bus[6] = ~btn_rst;
-	 assign ledg_bus[4] = ~btn_send;
+    // Turn off the leds when CPU is off
+    assign switch_led_bus = (sys_status != SYS_OFF) ? switch_bus : 0;
+    assign ledg_bus[4] = (sys_status != SYS_OFF) ? ~btn_send : 0;
+
+    assign ledg_bus[6] = ~btn_rst; // This led is turned on even when the CPU is off
 
     button_handler btn0 (
         .clk(clk),
