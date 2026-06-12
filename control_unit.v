@@ -176,7 +176,7 @@ module control_unit (
                 alu_imm      = 0;
                 mem_imm      = 0;
 					 
-					 if (opcode == ADDI || opcode == SUBI || opcode == MUL) alu_imm = 1;
+                if (opcode == ADDI || opcode == SUBI || opcode == MUL) alu_imm = 1;
 
                 if (opcode != CLEAR && opcode != DISPLAY) write_enable = 1;
                 
